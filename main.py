@@ -52,10 +52,15 @@ def books(form: BooksForm):
 
 
 if __name__ == "__main__":
+    from sys import argv
+    if len(argv) > 1 and argv[1].isdigit():
+        port = int(argv[1])
+    else:
+        port = 8000
     uvicorn.run(
         "main:app",
         host="127.0.0.1",
-        port=8000,
+        port=port,
         reload=True,
         debug=True,
         log_level="info",
