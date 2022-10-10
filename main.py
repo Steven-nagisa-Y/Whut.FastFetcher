@@ -1,9 +1,9 @@
 from fastapi import FastAPI
-from pydantic import BaseModel
 import uvicorn
 
 from lib.ias import Ias
 from model.apires import BadRes, GoodRes
+from model.form import *
 
 app = FastAPI()
 
@@ -14,40 +14,32 @@ def ping():
     return "pong"
 
 
-class ElectricForm(BaseModel):
-    username: str
-    password: str
-    meterId: str
-    factoryCode: str
-
-
-# 马区电费查询
+# 电费查询
 @app.post("/electric")
 def electric(form: ElectricForm):
     ias = Ias(form.username, form.password)
     if not ias.login():
         return BadRes("登录失败,检查账密是否正确！")
+    ok, meterId = ias.get_room_code(form.query, form.factoryCode)
+    if not ok:
+        return BadRes(meterId)
 
-    res = ias.fetch_electric_fee(form.meterId, form.factoryCode)
+    res = ias.fetch_electric_fee(meterId)
 
-    res_json = res.json()
+    res = res.json()
 
     # 剩余电量
     remain_power: str = (
-        "{}{}".format(res_json["remainPower"], res_json["remainName"])
+        "{}{}".format(res["remainPower"], res["remainName"])
         if (
-                res_json.__contains__("remainPower") and res_json.__contains__("remainName")
+            res.__contains__(
+                "remainPower") and res.__contains__("remainName")
         )
         else "无数据"
     )
     # 剩余电费
-    remain_due = res_json.get("meterOverdue", "无数据")
+    remain_due = res.get("meterOverdue", "无数据")
     return GoodRes("查询成功", "剩余电量: {}\n剩余电费: {}".format(remain_power, remain_due))
-
-
-class BooksForm(BaseModel):
-    username: str
-    password: str
 
 
 @app.post("/books")
