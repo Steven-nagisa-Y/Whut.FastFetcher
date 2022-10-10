@@ -4,3 +4,4 @@ test.py
 .vscode
 backup
 __pycache__
+venv
